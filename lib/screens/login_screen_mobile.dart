@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:helpdesk/screens/home_screen_mobile.dart';
 
 class LoginScreenMobile extends StatelessWidget {
   const LoginScreenMobile({super.key});
@@ -57,6 +58,7 @@ class LoginScreenMobile extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () {
                       // Handle login
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreenMobile()));
                     },
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
