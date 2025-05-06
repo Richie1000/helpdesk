@@ -1,11 +1,11 @@
-class User {
+class LoggedUser {
   final int id;
   final String name;
   final String email;
   final int score;
   final String type; // Nullable
 
-  User({
+  LoggedUser({
     required this.id,
     required this.name,
     required this.email,
@@ -13,8 +13,8 @@ class User {
     required this.type,
   });
 
-  factory User.fromJson(Map<String, dynamic> json) {
-    return User(
+  factory LoggedUser.fromJson(Map<String, dynamic> json) {
+    return LoggedUser(
       id: json['id'],
       name: json['name'],
       email: json['email'],

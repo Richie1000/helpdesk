@@ -5,7 +5,7 @@ class Ticket {
   final String title;
   final String description;
   final String status;
-  final User assignedTo;
+  final LoggedUser assignedTo;
   final String priority;
   final int score;
 
@@ -25,7 +25,7 @@ class Ticket {
       title: json['title'],
       description: json['description'],
       status: json['status'],
-      assignedTo: User.fromJson(json['assignedTo']),
+      assignedTo: LoggedUser.fromJson(json['assignedTo']),
       priority: json['priority'],
       score: json['score'],
     );

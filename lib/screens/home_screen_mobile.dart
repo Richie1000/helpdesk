@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'add_ticket_screen.dart';
+import 'ticket_detail_screen.dart';
 
 class HomeScreenMobile extends StatelessWidget {
   @override
@@ -178,6 +179,18 @@ class HomeScreenMobile extends StatelessWidget {
                       trailing: Icon(Icons.arrow_forward),
                       onTap: () {
                         // Handle ticket tap
+                        Navigator.push(
+  context,
+  MaterialPageRoute(
+    builder: (context) => TicketDetailScreen(
+      title: 'Network Issue',
+      description: 'User is experiencing connectivity issues.',
+      timeAssigned: '10:30 AM, Oct 2, 2024',
+      timeCompleted: '1:00 PM, Oct 2, 2024',
+      workedOnBy: 'Gilbert Awuah', createdBy: ' Nana',
+    ),
+  ),
+);
                       },
                     ),
                   );

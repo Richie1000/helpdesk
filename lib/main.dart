@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
-import './screens/login_screen_desktop.dart';
-import './screens/login_screen_mobile.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:helpdesk/service/auth_service.dart';
+import 'bloc/auth_bloc.dart';
+import 'firebase_options.dart';
+import './screens/login_screen.dart'; // A unified, responsive login screen
 
-void main() {
-  runApp(MyApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
+
+  runApp(
+    BlocProvider(
+      create: (_) => AuthBloc(AuthService()),
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -14,22 +35,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: ResponsiveLoginScreen(),
-    );
-  }
-}
-
-class ResponsiveLoginScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth > 800) {
-          return LoginScreenDesktop();
-        } else {
-          return LoginScreenMobile();
-        }
-      },
+      home: const LoginScreen(), // One responsive screen
     );
   }
 }
