@@ -48,7 +48,7 @@ class AuthFailureState extends AuthState {
 }
 
 /// --- BLOC ---
-
+class ForgotPasswordSuccessState extends AuthState {}
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthService authService;
 
@@ -56,6 +56,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<RegisterUserEvent>(_onRegister);
     on<SignInUserEvent>(_onSignIn);
     on<SignOutUserEvent>(_onSignOut);
+    on<ForgotPasswordEvent>((event, emit) async {
+      try {
+        await authService.sendPasswordResetEmail(event.email);
+        // Optionally emit a new state or show success message via UI
+      } catch (e) {
+        emit(AuthFailureState("Failed to send reset email."));
+      }
+    });
+
   }
 
   Future<void> _onRegister(RegisterUserEvent event, Emitter<AuthState> emit) async {
@@ -87,4 +96,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     await authService.signOut();
     emit(AuthInitialState());
   }
+
+
+
 }
+class ForgotPasswordEvent extends AuthEvent {
+  final String email;
+  ForgotPasswordEvent(this.email);
+}
+
+
+

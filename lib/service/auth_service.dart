@@ -99,4 +99,15 @@ class AuthService {
         return 'Authentication failed.';
     }
   }
+
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email);
+    } on fb_auth.FirebaseAuthException catch (e) {
+      throw AuthException(_firebaseErrorMessage(e.code));
+    } catch (_) {
+      throw AuthException('Failed to send reset email. Try again.');
+    }
+  }
+
 }

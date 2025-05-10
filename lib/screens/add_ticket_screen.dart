@@ -1,341 +1,219 @@
 import 'package:flutter/material.dart';
-import 'package:animate_do/animate_do.dart';
-import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:helpdesk/models/ticket.dart';
+import 'package:helpdesk/models/user.dart';
+import 'package:helpdesk/models/company.dart';
 
-class AddTicketScreen extends StatelessWidget {
-  final TextEditingController _titleController = TextEditingController();
-  final TextEditingController _descriptionController = TextEditingController();
-  String? _selectedPriority;
-  final List<String> _priorities = ['High', 'Medium', 'Low'];
+class AddTicketScreen extends StatefulWidget {
+  const AddTicketScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Ticket'),
+  State<AddTicketScreen> createState() => _AddTicketScreenState();
+}
+
+class _AddTicketScreenState extends State<AddTicketScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _statusController = TextEditingController();
+  final _priorityController = TextEditingController();
+  final _scoreController = TextEditingController();
+
+  List<Company> _companies = [];
+  Company? _selectedCompany;
+
+  List<LoggedUser> _users = [];
+  LoggedUser? _selectedUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCompanies();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchCompanies() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('settings')
+        .doc('companies')
+        .get();
+
+    final List<dynamic> companyList = snapshot.data()?['companies'] ?? [];
+    setState(() {
+      _companies = companyList.map((c) => Company.fromJson(c)).toList();
+    });
+  }
+
+  Future<void> _fetchUsers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    setState(() {
+      _users = snapshot.docs
+          .map((doc) => LoggedUser.fromJson(doc.data()))
+          .toList();
+    });
+  }
+
+  Future<void> _submitTicket() async {
+    if (_formKey.currentState!.validate()) {
+      if (_selectedCompany == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Please select a company.')),
+        );
+        return;
+      }
+
+      try {
+        final docRef = FirebaseFirestore.instance.collection('tickets').doc();
+
+        final ticket = Ticket(
+          id: DateTime.now().millisecondsSinceEpoch,
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          status: _statusController.text.trim(),
+          assignedTo: _selectedUser,
+          priority: _priorityController.text.trim(),
+          score: int.parse(_scoreController.text.trim()),
+          company: _selectedCompany!,
+        );
+
+        await docRef.set({
+          ...ticket.toJson(),
+          'firebaseId': docRef.id,
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ticket submitted successfully!')),
+        );
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _buildTextField(TextEditingController controller, String label,
+      {bool isNumber = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        validator: (value) {
+          if (value == null || value.trim().isEmpty) return 'Required';
+          if (isNumber && int.tryParse(value.trim()) == null) return 'Invalid number';
+          return null;
+        },
       ),
-      body: FadeInUp(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+    );
+  }
+
+  Widget _buildDropdowns() {
+    return Column(
+      children: [
+        DropdownButtonFormField<Company>(
+          value: _selectedCompany,
+          decoration: const InputDecoration(labelText: 'Select Company'),
+          items: _companies.map((company) {
+            return DropdownMenuItem(
+              value: company,
+              child: Text('${company.name} (${company.type.name})'),
+            );
+          }).toList(),
+          onChanged: (value) => setState(() => _selectedCompany = value),
+          validator: (value) => value == null ? 'Please select a company' : null,
+        ),
+        const SizedBox(height: 16),
+        DropdownButtonFormField<LoggedUser>(
+          value: _selectedUser,
+          decoration: const InputDecoration(labelText: 'Assign to (optional)'),
+          items: _users.map((user) {
+            return DropdownMenuItem(
+              value: user,
+              child: Text(user.name),
+            );
+          }).toList(),
+          onChanged: (value) => setState(() => _selectedUser = value),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormFields(bool isDesktop) {
+    final fields = [
+      _buildTextField(_titleController, 'Title'),
+      _buildTextField(_descriptionController, 'Description'),
+      _buildTextField(_statusController, 'Status'),
+      _buildTextField(_priorityController, 'Priority'),
+      _buildTextField(_scoreController, 'Score', isNumber: true),
+    ];
+
+    if (!isDesktop) {
+      return Column(children: [
+        ...fields,
+        const SizedBox(height: 16),
+        _buildDropdowns(),
+      ]);
+    }
+
+    return Row(
+      children: [
+        Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              TextField(
-                controller: _titleController,
-                decoration: InputDecoration(
-                  hintText: 'Ticket Title',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 16.0),
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  hintText: 'Ticket Description',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 4,
-              ),
-              SizedBox(height: 16.0),
-              DropdownButtonFormField<String>(
-                value: _selectedPriority,
-                hint: Text('Select Priority'),
-                items: _priorities.map((String priority) {
-                  return DropdownMenuItem<String>(
-                    value: priority,
-                    child: Text(priority),
-                  );
-                }).toList(),
-                onChanged: (String? value) {
-                  _selectedPriority = value;
-                },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: () {
-                  String title = _titleController.text;
-                  String description = _descriptionController.text;
-
-                  if (title.isNotEmpty &&
-                      description.isNotEmpty &&
-                      _selectedPriority != null) {
-                    print('Ticket Title: $title');
-                    print('Ticket Description: $description');
-                    print('Ticket Priority: $_selectedPriority');
-
-                    _titleController.clear();
-                    _descriptionController.clear();
-                    _selectedPriority = null;
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Ticket added successfully!')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Please fill in all fields.')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  padding: EdgeInsets.symmetric(horizontal: 50, vertical: 16),
-                ),
-                child: Text('Submit'),
-              ),
+            children: [
+              ...fields.sublist(0, (fields.length / 2).ceil()),
+              const SizedBox(height: 16),
+              _buildDropdowns(),
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class AddTicketScreenDesktop extends StatefulWidget {
-  @override
-  _AddTicketScreenDesktopState createState() => _AddTicketScreenDesktopState();
-}
-
-class _AddTicketScreenDesktopState extends State<AddTicketScreenDesktop> {
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
-  final _partnerNameController = TextEditingController();
-  DateTime? _selectedDate;
-  TimeOfDay? _selectedTime;
-  String? _selectedSeverity;
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2030),
-    );
-    if (picked != null && picked != _selectedDate)
-      setState(() {
-        _selectedDate = picked;
-      });
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (picked != null && picked != _selectedTime)
-      setState(() {
-        _selectedTime = picked;
-      });
-  }
-
-  void _showSuccessDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Success'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Lottie.asset(
-                'assets/lottie/success.json',
-                width: 100,
-                height: 100,
-              ),
-              SizedBox(height: 16.0),
-              Text('Ticket added successfully!'),
-            ],
+        const SizedBox(width: 20),
+        Expanded(
+          child: Column(
+            children: fields.sublist((fields.length / 2).ceil()),
           ),
-          actions: [
-            TextButton(
-              child: Text('OK'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isDesktop = constraints.maxWidth >= 600;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Add Ticket'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Add a New Ticket',
-              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16.0),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Scaffold(
+          appBar: AppBar(title: const Text('Add Ticket')),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
                     children: [
-                      SizedBox(
-                        width: screenWidth * 0.75,
-                        child: TextFormField(
-                          controller: _titleController,
-                          decoration: InputDecoration(
-                            labelText: 'Title of Ticket',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      SizedBox(
-                        width: screenWidth * 0.75,
-                        child: TextFormField(
-                          controller: _descriptionController,
-                          decoration: InputDecoration(
-                            labelText: 'Description',
-                            border: OutlineInputBorder(),
-                          ),
-                          maxLines: 4,
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      SizedBox(
-                        width: screenWidth * 0.75,
-                        child: TextFormField(
-                          controller: _partnerNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Partner Name',
-                            border: OutlineInputBorder(),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      Card(
-                        elevation: 4.0,
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Text(
-                                'Date of Ticket',
-                                style: TextStyle(
-                                  fontSize: 18.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(height: 16.0),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _selectedDate == null
-                                          ? 'No date chosen'
-                                          : 'Date: ${DateFormat.yMd().format(_selectedDate!)}',
-                                      style: TextStyle(fontSize: 16.0),
-                                    ),
-                                  ),
-                                  SizedBox(width: 8.0),
-                                  ElevatedButton(
-                                    onPressed: () => _selectDate(context),
-                                    child: Text('Select date'),
-                                  ),
-                                ],
-                              ),
-                              SizedBox(height: 16.0),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _selectedTime == null
-                                          ? 'No time chosen'
-                                          : 'Time: ${_selectedTime!.format(context)}',
-                                      style: TextStyle(fontSize: 16.0),
-                                    ),
-                                  ),
-                                  SizedBox(width: 8.0),
-                                  ElevatedButton(
-                                    onPressed: () => _selectTime(context),
-                                    child: Text('Select time'),
-                                  ),
-                                ],
-                              ),
-                              if (_selectedDate != null &&
-                                  _selectedTime != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 16.0),
-                                  child: Text(
-                                    'Selected Date and Time: ${DateFormat.yMd().format(_selectedDate!)} ${_selectedTime!.format(context)}',
-                                    style: TextStyle(
-                                      fontSize: 16.0,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      SizedBox(
-                        width: screenWidth * 0.75,
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedSeverity,
-                          decoration: InputDecoration(
-                            labelText: 'Severity',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: ['Level 1', 'Level 2', 'Level 3']
-                              .map((severity) => DropdownMenuItem(
-                            value: severity,
-                            child: Text(severity),
-                          ))
-                              .toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedSeverity = value;
-                            });
-                          },
-                        ),
-                      ),
-                      SizedBox(height: 16.0),
-                      Center(
-                        child: SizedBox(
-                          width: screenWidth * 0.25,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _showSuccessDialog();
-                            },
-                            child: Text('Submit'),
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 16.0),
-                            ),
-                          ),
+                      _buildFormFields(isDesktop),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: ElevatedButton(
+                          onPressed: _submitTicket,
+                          child: const Text('Submit'),
                         ),
                       ),
                     ],
                   ),
                 ),
-                Expanded(
-                  flex: 1,
-                  child: Container(),
-                ),
-              ],
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }

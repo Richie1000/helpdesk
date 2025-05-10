@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:helpdesk/screens/home_screen.dart';
 import '../widgets/desktop_login_layout.dart';
 import '../widgets/mobile_login_layout.dart';
 import 'home_screen_mobile.dart';
@@ -19,7 +20,7 @@ class LoginScreen extends StatelessWidget {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => isDesktop ? HomeScreenDesktop() : HomeScreenMobile(),
+          builder: (_) => HomeScreen(),
         ),
       );
     });

@@ -1,3 +1,4 @@
+import 'package:helpdesk/models/company.dart';
 import 'package:helpdesk/models/user.dart';
 
 class Ticket {
@@ -5,9 +6,10 @@ class Ticket {
   final String title;
   final String description;
   final String status;
-  final LoggedUser assignedTo;
+  final LoggedUser? assignedTo;
   final String priority;
   final int score;
+  final Company company;
 
   Ticket({
     required this.id,
@@ -17,6 +19,7 @@ class Ticket {
     required this.assignedTo,
     required this.priority,
     required this.score,
+    required this.company,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
@@ -25,9 +28,12 @@ class Ticket {
       title: json['title'],
       description: json['description'],
       status: json['status'],
-      assignedTo: LoggedUser.fromJson(json['assignedTo']),
+      assignedTo: json['assignedTo'] != null
+          ? LoggedUser.fromJson(json['assignedTo'])
+          : null,
       priority: json['priority'],
       score: json['score'],
+      company: Company.fromJson(json['company']),
     );
   }
 
@@ -37,9 +43,10 @@ class Ticket {
       'title': title,
       'description': description,
       'status': status,
-      'assignedTo': assignedTo.toJson(),
+      'assignedTo': assignedTo?.toJson(),
       'priority': priority,
       'score': score,
+      'company': company.toJson(),
     };
   }
 }

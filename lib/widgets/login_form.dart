@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../screens/forget_password_screen.dart';
+
 class LoginForm extends StatefulWidget {
   final bool isDesktop;
   final void Function(String email, String password) onSubmit;
@@ -83,14 +85,24 @@ class _LoginFormState extends State<LoginForm> {
                   Text('Remember me'),
                 ]),
                 TextButton(
-                  onPressed: () {},
-                  child: Text('Forgot your password?'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ForgotPasswordScreen()),
+                    );
+                  },
+                  child: Text('Forgot Password?'),
                 ),
+
               ],
             )
           else
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ForgotPasswordScreen()));
+              },
               child: Text('Forgot Password?',
                   style: TextStyle(color: Colors.white70)),
             ),

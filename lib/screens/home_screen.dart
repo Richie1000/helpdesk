@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:helpdesk/screens/add_company_screen.dart';
 import 'package:helpdesk/screens/add_ticket_screen.dart';
 import 'package:helpdesk/screens/add_ticket_screen_desktop.dart';
 import 'package:helpdesk/screens/ticket_detail_screen.dart';
 import 'package:helpdesk/screens/ticket_screen_desktop.dart';
 import 'package:fl_chart/fl_chart.dart';
+
+import '../bloc/auth_bloc.dart';
+import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   @override
@@ -45,19 +50,46 @@ class HomeScreenMobile extends StatelessWidget {
                           fontSize: 18,
                           fontWeight: FontWeight.bold)),
                   Text('user@example.com',
-                      style:
-                      TextStyle(color: Colors.white70, fontSize: 14)),
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
                 ],
               ),
             ),
             ListTile(leading: Icon(Icons.dashboard), title: Text('Dashboard')),
-            ListTile(leading: Icon(Icons.open_in_browser), title: Text('Open Tickets')),
-            ListTile(leading: Icon(Icons.check_circle), title: Text('Closed Tickets')),
-            ListTile(leading: Icon(Icons.warning), title: Text('Overdue Tickets')),
-            ListTile(leading: Icon(Icons.incomplete_circle), title: Text('In Progress Tickets')),
+            ListTile(
+                leading: Icon(Icons.add_business),
+                title: Text('Add Company'),
+                onTap: (){
+                  Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => AddCompanyScreen()));
+                },
+            ),
+            ListTile(
+                leading: Icon(Icons.open_in_browser),
+                title: Text('Open Tickets')),
+            ListTile(
+                leading: Icon(Icons.check_circle),
+                title: Text('Closed Tickets')),
+            ListTile(
+                leading: Icon(Icons.warning), title: Text('Overdue Tickets')),
+            ListTile(
+                leading: Icon(Icons.incomplete_circle),
+                title: Text('In Progress Tickets')),
             Divider(),
-            ListTile(leading: Icon(Icons.settings), title: Text('Settings')),
-            ListTile(leading: Icon(Icons.logout), title: Text('Logout')),
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Settings'),
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text('Logout'),
+              onTap: () {
+                context.read<AuthBloc>().add(SignOutUserEvent());
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => LoginScreen()), // or LoginScreenDesktop based on screen size
+                      (route) => false,
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -79,7 +111,7 @@ class HomeScreenMobile extends StatelessWidget {
               SizedBox(height: 16.0),
               Text('Dashboard',
                   style:
-                  TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold)),
+                      TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold)),
               SizedBox(height: 8.0),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -91,20 +123,28 @@ class HomeScreenMobile extends StatelessWidget {
                   physics: NeverScrollableScrollPhysics(),
                   children: [
                     _buildDashboardIndicator(
-                        title: 'Open Tickets', color: Colors.red, percentage: 0.3),
+                        title: 'Open Tickets',
+                        color: Colors.red,
+                        percentage: 0.3),
                     _buildDashboardIndicator(
-                        title: 'Closed Tickets', color: Colors.blue, percentage: 0.4),
+                        title: 'Closed Tickets',
+                        color: Colors.blue,
+                        percentage: 0.4),
                     _buildDashboardIndicator(
-                        title: 'Overdue Tickets', color: Colors.orange, percentage: 0.2),
+                        title: 'Overdue Tickets',
+                        color: Colors.orange,
+                        percentage: 0.2),
                     _buildDashboardIndicator(
-                        title: 'In Progress', color: Colors.purple, percentage: 0.1),
+                        title: 'In Progress',
+                        color: Colors.purple,
+                        percentage: 0.1),
                   ],
                 ),
               ),
               SizedBox(height: 16.0),
               Text('Recent Tickets',
                   style:
-                  TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold)),
+                      TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold)),
               SizedBox(height: 8.0),
               ListView.builder(
                 itemCount: 10,
@@ -123,12 +163,14 @@ class HomeScreenMobile extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                                 builder: (context) => TicketDetailScreen(
-                                    title: 'Network Issue',
-                                    description:
-                                    'User is experiencing connectivity issues.',
-                                    timeAssigned: '10:30 AM, Oct 2, 2024',
-                                    timeCompleted: '1:00 PM, Oct 2, 2024',
-                                    workedOnBy: 'Gilbert Awuah', createdBy: '',)));
+                                      title: 'Network Issue',
+                                      description:
+                                          'User is experiencing connectivity issues.',
+                                      timeAssigned: '10:30 AM, Oct 2, 2024',
+                                      timeCompleted: '1:00 PM, Oct 2, 2024',
+                                      workedOnBy: 'Gilbert Awuah',
+                                      createdBy: '',
+                                    )));
                       },
                     ),
                   );
@@ -140,8 +182,8 @@ class HomeScreenMobile extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-              context, MaterialPageRoute(builder: (context) => AddTicketScreen()));
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => AddTicketScreen()));
         },
         child: Icon(Icons.add),
         tooltip: 'Create New Ticket',
@@ -290,9 +332,18 @@ class Dashboard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                InfoCard(label: 'Open Tickets Today', value: '10', color: Colors.blue),
-                InfoCard(label: 'Closed Tickets Today', value: '5', color: Colors.red),
-                InfoCard(label: 'Unassigned Tickets', value: '2', color: Colors.green),
+                InfoCard(
+                    label: 'Open Tickets Today',
+                    value: '10',
+                    color: Colors.blue),
+                InfoCard(
+                    label: 'Closed Tickets Today',
+                    value: '5',
+                    color: Colors.red),
+                InfoCard(
+                    label: 'Unassigned Tickets',
+                    value: '2',
+                    color: Colors.green),
               ],
             ),
           ),
